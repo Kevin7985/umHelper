@@ -9,14 +9,19 @@ class DAL {
     }
 
     DAL.instance = this;
-
-    this.dbConnect();
+    //this.connect();
   }
 
-  async dbConnect() {
+  async connect() {
     const mongoCLient = new MongoClient(process.env.MONGODB_LINK);
     this.client = await mongoCLient.connect();
     this.db = this.client.db('umHelper');
+    await this.connectCollections();
+  }
+
+  async connectCollections() {
+    this.users = new (require('./Collections/UsersCollection')) (this.db);
+    this.inviteCodes = new (require('./Collections/InviteCodesCollection')) (this.db);
   }
 }
 
