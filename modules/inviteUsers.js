@@ -1,4 +1,5 @@
 const strings = require('../functions/strings');
+const vars = require('../functions/varTypes');
 
 class inviteUsers {
   static instance = null;
@@ -11,12 +12,6 @@ class inviteUsers {
     }
 
     inviteUsers.instance = this;
-  }
-
-  async getType(input) {
-    let reqex = new RegExp(/^\[object (\S+?)\]$/);
-    let matches = Object.prototype.toString.call(input).match(reqex) || [];
-    return (matches[1] || 'undefined').toLowerCase();
   }
 
   async validObject(func, input) {
@@ -33,12 +28,12 @@ class inviteUsers {
         throw '"users_amount" param is missed';
       }
 
-      let user_id_type = await this.getType(input.user_id);
+      let user_id_type = await vars.getType(input.user_id);
       if (user_id_type !== 'number') {
         throw '"user_id" param should be Number';
       }
 
-      let users_amount_type = await this.getType(input.users_amount);
+      let users_amount_type = await vars.getType(input.users_amount);
       if (users_amount_type !== 'number') {
         throw '"users_amount" param should be Number';
       }
@@ -48,7 +43,7 @@ class inviteUsers {
       }
 
       if (input.users_amount === -1 && input.expires) {
-        let expires_type = await this.getType(input.expires);
+        let expires_type = await vars.getType(input.expires);
         if (expires_type !== 'date') {
           throw '"expires" param should be Date';
         }
@@ -61,7 +56,7 @@ class inviteUsers {
         throw '"user_id" param is missed';
       }
 
-      let user_id_type = await this.getType(input.user_id);
+      let user_id_type = await vars.getType(input.user_id);
       if (user_id_type !== 'number') {
         throw '"user_id" param should be Number';
       }
@@ -73,7 +68,7 @@ class inviteUsers {
         throw '"code" param is missed';
       }
 
-      let code_type = await this.getType(input.code);
+      let code_type = await vars.getType(input.code);
       if (code_type !== 'string') {
         throw '"code" param should be String';
       }
@@ -83,7 +78,7 @@ class inviteUsers {
         throw '"user_id" param is missed';
       }
 
-      let user_id_type = await this.getType(input.user_id);
+      let user_id_type = await vars.getType(input.user_id);
       if (user_id_type !== 'number') {
         throw '"user_id" param should be Number';
       }
@@ -92,7 +87,7 @@ class inviteUsers {
         throw '"code" param is missed';
       }
 
-      let code_type = await this.getType(input.code);
+      let code_type = await vars.getType(input.code);
       if (code_type !== 'string') {
         throw '"code" param should be String';
       }
@@ -102,7 +97,7 @@ class inviteUsers {
         throw '"code" param is missed';
       }
 
-      let code_type = await this.getType(input.code);
+      let code_type = await vars.getType(input.code);
       if (code_type !== 'string') {
         throw '"code" param should be String';
       }
@@ -112,7 +107,7 @@ class inviteUsers {
         throw '"user_id" param is missed';
       }
 
-      let user_id_type = await this.getType(input.user_id);
+      let user_id_type = await vars.getType(input.user_id);
       if (user_id_type !== 'number') {
         throw '"user_id" param should be Number';
       }
@@ -121,7 +116,7 @@ class inviteUsers {
         throw '"code" param is missed';
       }
 
-      let code_type = await this.getType(input.code);
+      let code_type = await vars.getType(input.code);
       if (code_type !== 'string') {
         throw '"code" param should be String';
       }
@@ -192,7 +187,6 @@ class inviteUsers {
     params.createdAt = new Date();
     let res = await this.db.inviteCodes.insertCode(params);
 
-
     // отдаём его
     return code;
   }
@@ -223,6 +217,7 @@ class inviteUsers {
     let object = {
       user_id: params.user_id,
       code_id: code._id,
+      enabled: true,
       usedAt: new Date()
     };
 
@@ -237,7 +232,6 @@ class inviteUsers {
 
     // проверяем полномочия человека
     let allowed = await this.checkUserRights(params);
-    allowed = true;
     if (!allowed) {
       return 'THIS FUNCTION IS NOT ALLOWED FOR THIS USER';
     }
