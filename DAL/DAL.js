@@ -22,6 +22,7 @@ class DAL {
   async connectCollections() {
     this.users = new (require('./Collections/UsersCollection')) (this.db);
     this.inviteCodes = new (require('./Collections/InviteCodesCollection')) (this.db);
+    this.invitedUsers = new (require('./Collections/InvitedUsersCollection')) (this.db);
   }
 }
 

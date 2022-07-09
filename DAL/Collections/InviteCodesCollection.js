@@ -19,6 +19,10 @@ class InviteCodesCollection {
   async findCode(code) {
     return (await this.collection.findOne({code: code}));
   }
+
+  async updateCodeById(_id, updateObject) {
+    return (await this.collection.updateOne({_id: _id}, {$set: updateObject}));
+  }
 }
 
 module.exports = InviteCodesCollection;

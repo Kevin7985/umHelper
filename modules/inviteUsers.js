@@ -78,6 +78,35 @@ class inviteUsers {
         throw '"code" param should be String';
       }
     }
+    else if (func === 'useCode') {
+      if (!input.user_id) {
+        throw '"user_id" param is missed';
+      }
+
+      let user_id_type = await this.getType(input.user_id);
+      if (user_id_type !== 'number') {
+        throw '"user_id" param should be Number';
+      }
+
+      if (!input.code) {
+        throw '"code" param is missed';
+      }
+
+      let code_type = await this.getType(input.code);
+      if (code_type !== 'string') {
+        throw '"code" param should be String';
+      }
+    }
+    else if (func === 'disableCode') {
+      if (!input.code) {
+        throw '"code" param is missed';
+      }
+
+      let code_type = await this.getType(input.code);
+      if (code_type !== 'string') {
+        throw '"code" param should be String';
+      }
+    }
   }
 
   async checkUserRights(params) {
@@ -87,17 +116,37 @@ class inviteUsers {
     let user = await this.db.users.findUserByTgId(params.user_id);
 
     // Проверяем, есть ли у него возможность создавать пригласительные коды
-    if (!user || !user.canCreateInviteLinks) {
-      return false;
-    }
+    return !(!user || !user.canCreateInviteLinks);
 
-    return true;
+
   }
 
   async getCode(params) {
     await this.validObject('checkCode', params);
 
     return (await this.db.inviteCodes.findCode(params.code));
+  }
+
+  async disableCode(params) {
+    await this.validObject('disableCode', params);
+    let code = await this.getCode(params);
+    if (!code) {
+      return;
+    }
+
+    let users = await this.db.invitedUsers.findInvitedUsersByCodeId(code._id);
+
+    if (code.users_amount === users.length) {
+      await this.db.inviteCodes.updateCodeById(code._id, {enabled: false});
+      return;
+    }
+
+    if (code.expires) {
+      let now = new Date();
+      if (now - code.expires > 0) {
+        await this.db.inviteCodes.updateCodeById(code._id, {enabled: false});
+      }
+    }
   }
 
   async generateCode(params) {
@@ -127,6 +176,41 @@ class inviteUsers {
 
     // отдаём его
     return code;
+  }
+
+  async useCode(params) {
+    await this.validObject('useCode', params);
+
+    // Проверяем существование кода
+    let code = await this.getCode({code: params.code});
+    if (!code) {
+      return 'CODE NOT FOUND';
+    }
+
+    // Проверяем доступность кода
+    await this.disableCode({code: params.code});
+    code = await this.getCode({code: params.code});
+    if (!code.enabled) {
+      return 'INVALID CODE';
+    }
+
+    // Проверяем, переходил ли этот человек уже по ссылкам?
+    let userInvited = await this.db.invitedUsers.findInvitedUsersByTelegramId(params.user_id);
+    if (userInvited.length !== 0) {
+      return 'USER ALREADY INVITED';
+    }
+
+    // Добавляем нового пользователя и "привязываем" к нему вступление по этому коду
+    let object = {
+      user_id: params.user_id,
+      code_id: code._id,
+      usedAt: new Date()
+    };
+
+    this.db.invitedUsers.insertInvitedUser(object);
+    await this.disableCode({code: params.code});
+
+    return 'SUCCESS';
   }
 }
 
