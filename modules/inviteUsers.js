@@ -107,6 +107,25 @@ class inviteUsers {
         throw '"code" param should be String';
       }
     }
+    else if (func === 'deleteCode') {
+      if (!input.user_id) {
+        throw '"user_id" param is missed';
+      }
+
+      let user_id_type = await this.getType(input.user_id);
+      if (user_id_type !== 'number') {
+        throw '"user_id" param should be Number';
+      }
+
+      if (!input.code) {
+        throw '"code" param is missed';
+      }
+
+      let code_type = await this.getType(input.code);
+      if (code_type !== 'string') {
+        throw '"code" param should be String';
+      }
+    }
   }
 
   async checkUserRights(params) {
@@ -116,7 +135,7 @@ class inviteUsers {
     let user = await this.db.users.findUserByTgId(params.user_id);
 
     // Проверяем, есть ли у него возможность создавать пригласительные коды
-    return !(!user || !user.canCreateInviteLinks);
+    return !(!user || !user.canManageInviteLinks);
 
 
   }
@@ -209,6 +228,28 @@ class inviteUsers {
 
     this.db.invitedUsers.insertInvitedUser(object);
     await this.disableCode({code: params.code});
+
+    return 'SUCCESS';
+  }
+
+  async deleteCode(params) {
+    await this.validObject('deleteCode', params);
+
+    // проверяем полномочия человека
+    let allowed = await this.checkUserRights(params);
+    allowed = true;
+    if (!allowed) {
+      return 'THIS FUNCTION IS NOT ALLOWED FOR THIS USER';
+    }
+
+    // проверяем существование кода
+    let code = await this.getCode(params);
+    if (!code) {
+      return 'CODE NOT FOUND';
+    }
+
+    // Отключаем код
+    await this.db.inviteCodes.updateCodeById(code._id, {enabled: false});
 
     return 'SUCCESS';
   }
